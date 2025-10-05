@@ -2,53 +2,39 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Balança ESP32 - MQTT</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <script src="https://unpkg.com/paho-mqtt/mqttws31.min.js"></script>
+  <title>Balança ESP32</title>
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <script src="mqtt.js"></script>
 </head>
 <body class="bg-light">
   <div class="container text-center mt-5">
     <h1 class="mb-3">Shark - Balança Smart</h1>
     <div class="card shadow p-4">
-      <h2 class="mb-3 text-secondary">Peso Atual</h2>
-      <h1 id="peso" class="text-primary">Conectando...</h1>
+      <h1 class="mb-3">Peso da Balança</h1>
+      <h2 id="peso" class="text-primary">Conectando...</h2>
     </div>
   </div>
 
   <script>
-    // Configuração do cliente MQTT
-    const clientID = "webClient_" + Math.floor(Math.random() * 10000);
-    const client = new Paho.MQTT.Client("wss://test.mosquitto.org:8081/mqtt", clientID);
+    // Conectar ao broker HiveMQ via WebSocket
+    const client = mqtt.connect('wss://test.mosquitto.org:8080/mqtt');
 
-    // Quando conectar com sucesso
-    client.onConnectionLost = (responseObject) => {
-      document.getElementById("peso").innerText = "Conexão perdida 😢";
-      setTimeout(connectMQTT, 3000); // tenta reconectar
-    };
+    client.on('connect', function () {
+      console.log("Conectado ao broker MQTT!");
+      client.subscribe('shark/balanca/peso');
+    });
 
-    client.onMessageArrived = (message) => {
-      console.log("Mensagem recebida:", message.destinationName, message.payloadString);
-      document.getElementById("peso").innerText = message.payloadString + " kg";
-    };
+    client.on('message', function (topic, message) {
+      const peso = message.toString();
+      console.log("Peso recebido:", peso);
+      document.getElementById('peso').innerText = peso;
+    });
 
-    function connectMQTT() {
-      client.connect({
-        onSuccess: () => {
-          console.log("Conectado ao broker MQTT");
-          document.getElementById("peso").innerText = "Aguardando dados...";
-          client.subscribe("esp32/balanca"); // 🔹 Altere para o tópico que seu ESP32 publica
-        },
-        useSSL: true,
-        timeout: 5,
-        onFailure: (err) => {
-          console.error("Falha ao conectar:", err);
-          document.getElementById("peso").innerText = "Erro ao conectar";
-          setTimeout(connectMQTT, 5000);
-        }
-      });
-    }
-
-    connectMQTT();
+    client.on('error', function (err) {
+      console.error("Erro MQTT:", err);
+      document.getElementById('peso').innerText = "Erro de conexão MQTT";
+    });
   </script>
 </body>
 </html>
