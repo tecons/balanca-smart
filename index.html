@@ -18,7 +18,7 @@
 
   <script>
     // Conectar ao broker HiveMQ via WebSocket
-    const client = mqtt.connect('wss://test.mosquitto.org:8080/mqtt');
+    const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt');
 
     client.on('connect', function () {
       console.log("Conectado ao broker MQTT!");
